@@ -1,5 +1,4 @@
 import hashlib
-from math import fabs
 import socket
 import random
 import string
@@ -14,7 +13,7 @@ PORT = 7070
 privateString = "comComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomCom".encode("utf-8")
 
 _PERIODFORSENDINGREMANINGTIME_ = 3
-_TIMEFORGUESSING_ = 12
+_TIMEFORGUESSING_ = 30
 remainingTime = _TIMEFORGUESSING_
 exit_event = threading.Event()
 gameRunning = False
@@ -25,17 +24,23 @@ playerScore = 0
 def sendRemainingTimePeriodically():
     global playerScore
     global remainingTime
+    global gameRunning
+
     remainingTime = _TIMEFORGUESSING_
     while(True):
         if exit_event.is_set():
             exit_event.clear()
+            remainingTime = _TIMEFORGUESSING_
             return
+        
         if remainingTime <= 0:
             bytes = int(1).to_bytes(1, "big", signed=False) + int(0).to_bytes(2 ,"big", signed=False)
             connection.send(bytes)
             playerScore -= 1
+            remainingTime = _TIMEFORGUESSING_
+            gameRunning = False
             sendCurrentScore()
-            exit_event.set()
+            return
         else:        
             bytes = int(1).to_bytes(1, "big", signed=False) + int(remainingTime).to_bytes(2 ,"big", signed=False)
             connection.send(bytes)
@@ -43,6 +48,7 @@ def sendRemainingTimePeriodically():
         for i in range(_PERIODFORSENDINGREMANINGTIME_):
             if exit_event.is_set():
                 exit_event.clear()
+                remainingTime = _TIMEFORGUESSING_
                 return
             time.sleep(1)
             remainingTime -= 1
@@ -52,11 +58,12 @@ def terminateGame():
     global gameRunning
     gameRunning = False
     exit_event.set()
-    thread.join()
     exit()
 
 def startGame():
     global gameRunning
+    if gameRunning:
+        return
     gameRunning = True
     askQuestion()
     
@@ -67,8 +74,11 @@ def sendRemainingTime():
 
 def guess(data):
     global playerScore
+    global remainingTime
+    global gameRunning
     if gameRunning and remainingTime > 0:
         exit_event.set()
+        gameRunning = False
         guess = str(data, "utf-8")
         if guess == "even":
             if askedNumber % 2 == 0:
@@ -95,6 +105,7 @@ def askQuestion():
     stringToSend = "What is your guess? Number, even, odd?".encode("utf-8")
     bytesToSend = int(0).to_bytes(1, "big", signed=False) + stringToSend
     connection.sendall(bytesToSend)
+    exit_event.clear()
     thread = threading.Thread(target=sendRemainingTimePeriodically)
     thread.start()
 
@@ -142,28 +153,26 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 connection.close()
                 exit()
 
-            thread = threading.Thread(target=sendRemainingTimePeriodically)
-            #thread.start()
-
             while(True):
                 data = connection.recv(1024)
                 if(not data):
                     continue
 
                 #PARSE DATA
-                
                 command = int.from_bytes(data[0:1], "big", signed=False)
                 print("command=", command)
                 if command == 0:
-                    print("startgame")
+                    print("------- startgame")
                     startGame()
                 elif command == 1:
-                    print("terminateGame")
+                    print("------- terminateGame")
                     terminateGame()
                 elif command == 2:
-                    print("sendRemainingTime")
+                    print("------- sendRemainingTime")
                     sendRemainingTime()
                 elif command == 3:
-                    print("guess")
+                    print("------- guess")
                     guess(data[1:])
-                #print(int.from_bytes(data, "big"))
+                else:
+                    print("------- INPUT NOT RECOGNIZED")
+                
