@@ -7,7 +7,7 @@ import threading
 
 HOST = "127.0.0.1"
 PORT = 7070
-privateString = "comComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomCom".encode("utf-8")
+privateString = "comComcomComcomComcomComcomComco".encode("utf-8")
 exit_event = threading.Event()
 gameRunning = 0
 

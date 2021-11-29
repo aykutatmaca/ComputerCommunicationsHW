@@ -10,7 +10,7 @@ import time
 
 HOST = "127.0.0.1"
 PORT = 7070
-privateString = "comComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomComcomCom".encode("utf-8")
+privateString = "comComcomComcomComcomComcomComco".encode("utf-8")
 
 _PERIODFORSENDINGREMANINGTIME_ = 3
 _TIMEFORGUESSING_ = 30
